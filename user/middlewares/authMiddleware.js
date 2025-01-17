@@ -1,3 +1,4 @@
+import { blacklistModel } from "../models/blacklistModel.js";
 import { userModel } from "../models/userModel.js";
 import jwt from 'jsonwebtoken';
 
@@ -9,16 +10,26 @@ export const userAuth = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
+
+        const isBlacklisted = await blacklistModel.findOne({ token });
+
+        if (isBlacklisted) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
         const user = await userModel.findById(decoded.id)
-        if(!user){
-            return res.status(404).json({message:"User not found"});
+        
+        delete user._doc.password;
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
         req.user = user;
         next();
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: error.message });
-        
+
     }
 }
