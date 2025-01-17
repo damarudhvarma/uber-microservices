@@ -2,7 +2,10 @@ import { captainModel } from "../models/captainModel.js";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { blacklistModel } from "../models/blacklistModel.js";
+import { connect, subscribeToQueue } from "../service/rabbit.js";
 
+
+const pendingRequests = [];
 
 export const register = async (req, res) => {
     try {
@@ -22,7 +25,7 @@ export const register = async (req, res) => {
         const token = jwt.sign({ id: newcaptain._id }, process.env.JWT_SECRET, {
             expiresIn: "1h"
         });
-        res.cookie("token", token);
+        res.cookie("cap_token", token);
 
         res.status(201).send({ token, newcaptain });
     } catch (error) {
@@ -53,7 +56,7 @@ export const login = async (req, res) => {
 
         delete captain._doc.password;
 
-        res.cookie('token', token);
+        res.cookie('cap_token', token);
 
         res.send({ token, captain });
 
@@ -69,7 +72,7 @@ export const logout = async (req, res) => {
     try {
         const token = req.cookies.token;
         await blacklistModel.create({ token });
-        res.clearCookie('token');
+        res.clearCookie('cap_token');
         res.send({ message: 'captain logged out successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -95,3 +98,25 @@ export const toggleAvailability = async (req, res) => {
         res.status(500).json({message:error.message});
     }
 }
+
+export const waitForNewRide = async (req, res) => {
+
+   req.setTimeout(30000,()=>{
+         res.status(204).end();
+   });
+
+   pendingRequests.push(res);
+
+
+}
+
+subscribeToQueue("new-ride", (data) => {
+    const rideData = JSON.parse(data);
+    pendingRequests.forEach((res) => {
+        res.json({data:rideData});
+    });
+    pendingRequests.length = 0;
+
+
+});
+

@@ -3,6 +3,7 @@ import { userRouter } from './routes/userRoutes.js';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { connectToDB } from './DB/connect.js';
+import { connect } from '../rides/service/rabbit.js';
 
 
 
@@ -13,6 +14,7 @@ app.use(cookieParser());
 dotenv.config();
 app.use("/",userRouter);
 connectToDB()
+connect();
 
 export { app };
 

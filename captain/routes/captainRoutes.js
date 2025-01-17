@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, logout, profile, register, toggleAvailability } from "../controllers/captainController.js";
+import { login, logout, profile, register, toggleAvailability, waitForNewRide } from "../controllers/captainController.js";
 import { captainAuth } from "../middlewares/authMiddleware.js";
 
 
@@ -11,3 +11,4 @@ captainRouter.post("/login",login);
 captainRouter.get("/logout",logout);
 captainRouter.get('/profile',captainAuth,profile);
 captainRouter.patch('/toogle-availability',captainAuth,toggleAvailability);
+captainRouter.get('/new-ride',captainAuth,waitForNewRide);
